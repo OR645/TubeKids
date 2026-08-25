@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0e2f74">
+  <meta name="theme-color" content="#0b2a6b">
   <title>TubeKids — הסרטונים שלי</title>
   <meta name="description" content="ספריית סרטונים מקומית, משפחתית ופשוטה לילדים">
   <link rel="icon" href="assets/tubekids-logo.png">
@@ -11,8 +11,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Suez+One&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script src="tubekids-logo.js"></script>
 </head>
 <body>
+  <div id="splash" class="splash" role="status" aria-label="TubeKids נטען">
+    <div class="splash-sky" aria-hidden="true">
+      <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+      <i class="bubble u1"></i><i class="bubble u2"></i><i class="bubble u3"></i><i class="bubble u4"></i><i class="bubble u5"></i>
+      <i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i><i class="spark s4"></i><i class="spark s5"></i><i class="spark s6"></i>
+    </div>
+    <div class="splash-core">
+      <tubekids-logo size="xl" class="tk-logo" aria-label="TubeKids"></tubekids-logo>
+      <p class="splash-tagline">סרטונים בטוחים, רק בשבילך</p>
+      <div class="splash-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+  </div>
   <svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6c0-.9 1-1.5 1.8-1L18 9.7c.8.5.8 1.6 0 2.1L9.8 17c-.8.5-1.8-.1-1.8-1V5.6Z" fill="currentColor"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.5 5 5.5.8-4 3.9.95 5.5L12 16.2l-4.95 2.6.95-5.5-4-3.9 5.5-.8 2.5-5Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
@@ -30,33 +43,27 @@
     <symbol id="i-film" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.5 5.5v13M15.5 5.5v13M3.5 12h17" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5h5l2 2h10v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-11Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 7h11M4 12h11M4 17h7M18.5 15.5V20l3.5-2.2-3.5-2.3Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </svg>
 
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand">
-        <img class="brand-logo" src="assets/tubekids-logo.png" alt="TubeKids" width="1254" height="1254">
-        <span class="brand-text">
-          <strong>הסרטונים שלי</strong>
-          <small id="brandGreeting">מה בא לך לראות היום?</small>
-        </span>
-      </div>
+      <tubekids-logo size="sm" class="tk-logo brand-logo" aria-label="TubeKids"></tubekids-logo>
+      <label id="searchBox" class="search-box" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
+        <input id="searchInput" type="search" placeholder="חיפוש סרטון..." autocomplete="off" aria-label="חיפוש סרטון">
+      </label>
       <div class="header-actions">
-        <span id="parentBadge" class="parent-badge" hidden><svg class="icon" aria-hidden="true"><use href="#i-unlock"></use></svg>מצב הורים</span>
-        <button id="refreshButton" class="button button-quiet parent-only" hidden type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg>רענון מהתיקייה</button>
-        <button id="lockButton" class="icon-button on-navy" type="button" aria-label="כניסה למצב הורים" title="מצב הורים"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg></button>
+        <button id="refreshButton" class="button button-quiet parent-only" hidden type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"></use></svg>רענון</button>
+        <button id="lockButton" class="button button-quiet" type="button" aria-label="כניסה למצב הורים" title="מצב הורים">
+          <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+          <span id="parentBadge" class="lock-label">מצב הורים</span>
+        </button>
       </div>
     </div>
-    <div class="brand-rule" aria-hidden="true"></div>
   </header>
 
   <main class="app-shell">
     <section id="toolbar" class="toolbar" hidden>
-      <label class="search-box">
-        <svg class="icon" aria-hidden="true"><use href="#i-search"></use></svg>
-        <input id="searchInput" type="search" placeholder="חיפוש סרטון..." autocomplete="off" aria-label="חיפוש סרטון">
-      </label>
       <div id="categoryChips" class="chips" role="group" aria-label="סינון לפי קטגוריה"></div>
     </section>
 
@@ -77,42 +84,51 @@
 
   <section id="playerOverlay" class="player-overlay" hidden aria-label="נגן וידאו">
     <header class="player-header">
-      <img class="player-mark" src="assets/tubekids-logo.png" alt="" width="1254" height="1254">
-      <div class="player-title"><strong id="playingTitle"></strong><small id="playingCategory"></small></div>
-      <label class="switch" title="בסוף כל סרטון הבא יופעל לבד">
-        <input id="autoplayToggle" type="checkbox">
-        <span class="switch-track" aria-hidden="true"></span>
-        <span class="switch-label">הפעלה אוטומטית</span>
-      </label>
+      <button id="closePlayer" class="button button-quiet" type="button"><svg class="icon" aria-hidden="true"><use href="#i-chevron-end"></use></svg>חזרה</button>
+      <div class="player-title">
+        <strong id="playingTitle"></strong>
+        <small id="playingCategory"></small>
+      </div>
+      <button id="favoritePlaying" class="button button-quiet favorite-playing" type="button" aria-label="הוספה למועדפים" aria-pressed="false">
+        <svg class="icon" aria-hidden="true"><use href="#i-star"></use></svg>
+        <span>מועדף</span>
+      </button>
     </header>
 
     <div class="player-main">
       <div class="player-stage-column">
         <div id="playerStage" class="player-stage">
           <div id="playerFrameWrap" class="player-frame-wrap"></div>
-          <div class="stage-controls">
-            <button id="closePlayer" class="button button-red" type="button"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg>סגירה</button>
-            <button id="fullscreenButton" class="icon-button on-navy" type="button" aria-label="מסך מלא" title="מסך מלא"><svg class="icon" aria-hidden="true"><use href="#i-expand"></use></svg></button>
-          </div>
-          <div id="upNextCard" class="up-next-card" hidden>
+        </div>
+
+        <div id="upNextCard" class="up-next-card" hidden>
+          <video id="upNextThumb" class="up-next-thumb" muted playsinline preload="metadata" tabindex="-1"></video>
+          <div class="up-next-text">
             <p id="upNextKicker" class="up-next-kicker">הסרטון הבא</p>
             <strong id="upNextTitle"></strong>
             <div id="upNextProgress" class="up-next-progress" aria-hidden="true"><i></i></div>
-            <div class="up-next-actions">
-              <button id="upNextPlay" class="button button-red" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"></use></svg>נגן עכשיו</button>
-              <button id="upNextCancel" class="button button-ghost" type="button">לא עכשיו</button>
-            </div>
+          </div>
+          <div class="up-next-actions">
+            <button id="upNextPlay" class="button button-red" type="button"><svg class="icon" aria-hidden="true"><use href="#i-play"></use></svg>נגן עכשיו</button>
+            <button id="upNextCancel" class="button button-ghost" type="button">לא עכשיו</button>
           </div>
         </div>
-        <nav class="player-nav" aria-label="מעבר בין סרטונים">
-          <button id="nextButton" class="round-nav" type="button" aria-label="הסרטון הבא"><svg class="icon" aria-hidden="true"><use href="#i-chevron-start"></use></svg></button>
-          <button id="favoritePlaying" class="round-nav favorite-playing" type="button" aria-label="הוספה למועדפים" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-star"></use></svg></button>
-          <button id="previousButton" class="round-nav" type="button" aria-label="הסרטון הקודם"><svg class="icon" aria-hidden="true"><use href="#i-chevron-end"></use></svg></button>
+
+        <nav class="player-nav" aria-label="פקדי נגן">
+          <button id="nextButton" class="nav-action" type="button"><svg class="icon" aria-hidden="true"><use href="#i-chevron-start"></use></svg>הבא</button>
+          <button id="previousButton" class="nav-action" type="button"><svg class="icon" aria-hidden="true"><use href="#i-chevron-end"></use></svg>הקודם</button>
+          <span class="nav-gap"></span>
+          <label class="switch" title="בסוף כל סרטון הבא יופעל לבד">
+            <input id="autoplayToggle" type="checkbox">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span class="switch-label">הפעלה אוטומטית</span>
+          </label>
+          <button id="fullscreenButton" class="nav-action" type="button" aria-label="מסך מלא" title="מסך מלא"><svg class="icon" aria-hidden="true"><use href="#i-expand"></use></svg>מסך מלא</button>
         </nav>
       </div>
 
       <aside id="playerSidebar" class="player-sidebar" aria-label="סרטונים נוספים">
-        <h2><svg class="icon" aria-hidden="true"><use href="#i-list"></use></svg>הנצפים ביותר</h2>
+        <h2>עוד סרטונים</h2>
         <div id="sidebarList" class="sidebar-list"></div>
       </aside>
     </div>
@@ -137,8 +153,10 @@
       <h2>עריכת הסרטון</h2>
       <p id="editVideoTitle"></p>
       <datalist id="categoryOptions"></datalist>
-      <label>קטגוריה<input id="editCategoryInput" type="text" list="categoryOptions"></label>
-      <label>תגיות <small>(מופרדות בפסיקים)</small><input id="editTagsInput" type="text" placeholder="חיות, שירים, עברית"></label>
+      <div class="field-row">
+        <label>קטגוריה<input id="editCategoryInput" type="text" list="categoryOptions"></label>
+        <label>תגיות <small>(מופרדות בפסיקים)</small><input id="editTagsInput" type="text" placeholder="חיות, שירים, עברית"></label>
+      </div>
       <button class="button button-primary full" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg>שמירת שינויים</button>
     </form>
   </dialog>

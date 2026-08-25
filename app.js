@@ -20,7 +20,8 @@
     fullscreen: $("#fullscreenButton"), previous: $("#previousButton"), next: $("#nextButton"), favoritePlaying: $("#favoritePlaying"),
     autoplayToggle: $("#autoplayToggle"), sidebar: $("#playerSidebar"), sidebarList: $("#sidebarList"),
     upNext: $("#upNextCard"), upNextKicker: $("#upNextKicker"), upNextTitle: $("#upNextTitle"), upNextPlay: $("#upNextPlay"),
-    upNextCancel: $("#upNextCancel"), upNextProgress: $("#upNextProgress")?.firstElementChild, greeting: $("#brandGreeting")
+    upNextCancel: $("#upNextCancel"), upNextProgress: $("#upNextProgress")?.firstElementChild, searchBox: $("#searchBox"),
+    upNextThumb: $("#upNextThumb")
   };
 
   /* ---------- עזרי תצוגה ---------- */
@@ -40,12 +41,6 @@
     const rest = String(total % 60).padStart(2, "0");
     if (minutes < 60) return `${minutes}:${rest}`;
     return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}:${rest}`;
-  }
-  function greeting() {
-    const hour = new Date().getHours();
-    if (hour < 12) return "בוקר טוב! מה נראה היום?";
-    if (hour < 17) return "מה בא לך לראות עכשיו?";
-    return "ערב טוב! בוחרים סרטון?";
   }
 
   /* ---------- מטא־דאטה מקומית ---------- */
@@ -111,12 +106,7 @@
         </button>
         <div class="card-body">
           <h2>${escapeHtml(video.title)}</h2>
-          <div class="meta-row">
-            <span class="category-label">${escapeHtml(video.category)}</span>
-            ${video.views ? `<span class="meta-sep"></span><span>${video.views} צפיות</span>` : ""}
-            ${video.favorite ? '<span class="meta-sep"></span><span>מועדף</span>' : ""}
-          </div>
-          ${video.tags.length ? `<div class="tag-row">${video.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>` : ""}
+          <span class="category-label">${escapeHtml(video.category)}</span>
           ${state.parentMode ? `<div class="card-actions"><button class="small-action" data-action="edit" type="button">${icon("edit")}עריכה</button></div>` : ""}
         </div>
       </article>`;
@@ -137,6 +127,7 @@
     els.chips.innerHTML = chips.map((chip) => `<button class="chip${chip.className ? ` ${chip.className}` : ""}${state.category === chip.key ? " active" : ""}" data-category="${escapeHtml(chip.key)}" type="button" aria-pressed="${state.category === chip.key}">${chip.icon ? icon(chip.icon) : ""}${escapeHtml(chip.label)}</button>`).join("");
     els.categoryOptions.innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
     els.toolbar.hidden = state.videos.length === 0;
+    els.searchBox.hidden = state.videos.length === 0;
 
     const visible = filteredVideos();
     els.grid.innerHTML = visible.map(cardMarkup).join("");
@@ -165,7 +156,7 @@
     els.sidebarList.innerHTML = list.map((video) => `
       <button class="sidebar-item" data-play="${escapeHtml(video.id)}" type="button">
         <video src="${escapeHtml(video.src)}" preload="none" muted playsinline tabindex="-1" data-preview></video>
-        <span><strong>${escapeHtml(video.title)}</strong><small>${escapeHtml(video.category)}${video.views ? ` · ${video.views} צפיות` : ""}</small></span>
+        <span><strong>${escapeHtml(video.title)}</strong><small>${escapeHtml(video.category)}</small></span>
       </button>`).join("");
     els.sidebar.hidden = list.length === 0;
     setupPreviews(els.sidebarList);
@@ -247,6 +238,7 @@
   function hideUpNext() { clearInterval(hideUpNext.timer); els.upNext.hidden = true; }
   function showUpNext(video) {
     els.upNextTitle.textContent = video.title;
+    if (els.upNextThumb) els.upNextThumb.src = `${video.src}#t=${THUMB_TIME}`;
     els.upNext.hidden = false;
     els.upNextCancel.hidden = !state.autoplay;
     els.upNextProgress.parentElement.hidden = !state.autoplay;
@@ -400,9 +392,8 @@
     if (event.key === "ArrowLeft" && !els.next.disabled) stepPlayer(1);
   });
 
-  els.greeting.textContent = greeting();
   syncFullscreenButton();
   loadMetadata();
-  loadVideos();
+  loadVideos().finally(() => window.TubeKidsSplash?.ready());
   setInterval(() => fetch("/__ping", { cache: "no-store" }).catch(() => {}), 30000);
 })();
