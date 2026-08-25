@@ -153,13 +153,14 @@ body.parent-mode #lockButton:hover { background: var(--yellow-400); }
   transform: translate(50%, -50%); display: grid; place-items: center;
   width: 62px; height: 62px; border-radius: 50%; background: var(--red-500); color: #fff;
   box-shadow: 0 12px 26px -10px rgba(6, 28, 74, .8);
-  transition: transform var(--mid) var(--ease), background var(--fast) var(--ease);
+  transition: transform var(--mid) var(--ease), opacity var(--fast) var(--ease), background var(--fast) var(--ease);
   pointer-events: none;
 }
 html[dir="ltr"] .play-badge { transform: translate(-50%, -50%); }
 .play-badge .icon { width: 29px; height: 29px; margin-inline-start: 2px; }
-.video-card:hover .play-badge { transform: translate(50%, -50%) scale(1.07); background: var(--red-400); }
-html[dir="ltr"] .video-card:hover .play-badge { transform: translate(-50%, -50%) scale(1.07); }
+/* בריחוף מוצגת התצוגה המקדימה, ולכן כפתור הפליי נעלם */
+.video-card:hover .play-badge { opacity: 0; transform: translate(50%, -50%) scale(.85); }
+html[dir="ltr"] .video-card:hover .play-badge { transform: translate(-50%, -50%) scale(.85); }
 .duration-badge {
   position: absolute; inset-block-end: 9px; inset-inline-start: 9px; direction: ltr;
   padding: 3px 8px; border-radius: 7px; background: rgba(6, 28, 74, .85);
@@ -269,12 +270,36 @@ html[dir="ltr"] .video-card:hover .play-badge { transform: translate(-50%, -50%)
 .player-stage-column { min-width: 0; display: flex; flex-direction: column; gap: 18px; }
 .player-stage { flex: 1; min-height: 0; display: grid; place-items: center; }
 .player-frame-wrap { width: 100%; height: 100%; display: grid; place-items: center; }
-.player-frame-wrap video {
+.player-frame-wrap video { cursor: pointer; 
   width: 100%; height: 100%; border: 0; border-radius: var(--r-md);
   background: #000; object-fit: contain;
 }
+.player-stage { position: relative; }
 .player-stage:fullscreen { background: #000; }
 .player-stage:fullscreen .player-frame-wrap video { border-radius: 0; }
+
+.stage-fs {
+  position: absolute; inset-block-start: 14px; inset-inline-start: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 52px; height: 52px; border: 0; border-radius: 50%;
+  background: rgba(8, 20, 48, .62); color: #fff; cursor: pointer;
+  opacity: 0; transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.stage-fs .icon { width: 26px; height: 26px; }
+.stage-fs:hover { background: rgba(8, 20, 48, .85); }
+.player-stage:hover .stage-fs, .stage-fs:focus-visible, .player-stage.show-controls .stage-fs { opacity: 1; }
+.player-stage:fullscreen .stage-fs { width: 60px; height: 60px; }
+
+.stage-feedback {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: grid; place-items: center; width: 104px; height: 104px; border-radius: 50%;
+  background: rgba(8, 20, 48, .55); color: #fff; pointer-events: none; opacity: 0;
+}
+.stage-feedback .icon { width: 48px; height: 48px; }
+.stage-feedback.flash { animation: stage-flash .55s var(--ease); }
+.stage-feedback.flash .icon { animation: stage-flash-icon .55s var(--ease); }
+@keyframes stage-flash { from { opacity: 1; } to { opacity: 0; } }
+@keyframes stage-flash-icon { from { scale: .8; } to { scale: 1.3; } }
 
 .player-nav { display: flex; align-items: center; gap: 14px; }
 .nav-gap { flex: 1; }

@@ -8,6 +8,7 @@
   const PREVIEW_LENGTH = 6;   // אורך התצוגה המקדימה בריחוף, בשניות
   const state = { videos: [], metadata: {}, category: "all", search: "", parentMode: false, currentId: null, editId: null, autoplay: true, countdown: 0 };
   const durations = new Map();
+  let tapTimer = 0;
   const $ = (selector) => document.querySelector(selector);
   const els = {
     grid: $("#videoGrid"), toolbar: $("#toolbar"), chips: $("#categoryChips"), search: $("#searchInput"), empty: $("#emptyState"),
@@ -21,7 +22,8 @@
     autoplayToggle: $("#autoplayToggle"), sidebar: $("#playerSidebar"), sidebarList: $("#sidebarList"),
     upNext: $("#upNextCard"), upNextKicker: $("#upNextKicker"), upNextTitle: $("#upNextTitle"), upNextPlay: $("#upNextPlay"),
     upNextCancel: $("#upNextCancel"), upNextProgress: $("#upNextProgress")?.firstElementChild, searchBox: $("#searchBox"),
-    upNextThumb: $("#upNextThumb")
+    upNextThumb: $("#upNextThumb"), stageFeedback: $("#stageFeedback"),
+    stageFullscreen: $("#stageFullscreen")
   };
 
   /* ---------- עזרי תצוגה ---------- */
@@ -106,7 +108,7 @@
         </button>
         <div class="card-body">
           <h2>${escapeHtml(video.title)}</h2>
-          <span class="category-label">${escapeHtml(video.category)}</span>
+          ${state.parentMode ? `<span class="category-label">${escapeHtml(video.category)}</span>` : ""}
           ${state.parentMode ? `<div class="card-actions"><button class="small-action" data-action="edit" type="button">${icon("edit")}עריכה</button></div>` : ""}
         </div>
       </article>`;
@@ -260,11 +262,25 @@
     video.views += 1; persistVideo(video); state.currentId = id;
     els.playingTitle.textContent = video.title; els.playingCategory.textContent = video.category;
     els.frame.innerHTML = `<video src="${escapeHtml(video.src)}" controls controlslist="nofullscreen" disablepictureinpicture autoplay playsinline></video>`;
-    playerVideo().addEventListener("ended", () => { const next = nextVideo(); if (next) showUpNext(next); });
+    const element = playerVideo();
+    element.addEventListener("ended", () => { const next = nextVideo(); if (next) showUpNext(next); });
+    element.addEventListener("click", (event) => {
+      if (onNativeControls(event)) return;   // לחיצה על פס הפקדים של הדפדפן
+      nudgeStageControls();
+      clearTimeout(tapTimer);
+      tapTimer = setTimeout(togglePlay, 220);   // לחיצה בודדת = הפעלה/עצירה
+    });
+    element.addEventListener("dblclick", (event) => {
+      if (onNativeControls(event)) return;
+      clearTimeout(tapTimer);
+      toggleFullscreen();                       // לחיצה כפולה = מסך מלא
+    });
     els.player.hidden = false; document.body.style.overflow = "hidden"; updatePlayerButtons(); render();
   }
   async function closePlayer() {
     hideUpNext();
+    clearTimeout(tapTimer);
+    els.stage.classList.remove("show-controls");
     if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch { /* לא קריטי */ } }
     const video = playerVideo(); if (video) { video.pause(); video.removeAttribute("src"); video.load(); }
     els.frame.innerHTML = ""; els.player.hidden = true; state.currentId = null; document.body.style.overflow = "";
@@ -275,9 +291,57 @@
   }
   function syncFullscreenButton() {
     const active = document.fullscreenElement === els.stage;
-    setIcon(els.fullscreen, active ? "collapse" : "expand");
-    const label = active ? "יציאה ממסך מלא" : "מסך מלא";
-    els.fullscreen.setAttribute("aria-label", label); els.fullscreen.title = label;
+    const label = active ? "יציאה ממסך מלא (F)" : "מסך מלא (F)";
+    [els.fullscreen, els.stageFullscreen].forEach((button) => {
+      setIcon(button, active ? "collapse" : "expand");
+      button.setAttribute("aria-label", label); button.title = label;
+    });
+    const text = els.fullscreen.querySelector("span");
+    if (text) text.textContent = active ? "יציאה" : "מסך מלא";
+    if (active) nudgeStageControls();
+  }
+
+  /* ---------- שליטה בסרטון ---------- */
+  function onNativeControls(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const strip = document.fullscreenElement ? 90 : 70;
+    return event.clientY > rect.bottom - strip;
+  }
+  function nudgeStageControls() {
+    els.stage.classList.add("show-controls");
+    clearTimeout(nudgeStageControls.timer);
+    nudgeStageControls.timer = setTimeout(() => els.stage.classList.remove("show-controls"), 2500);
+  }
+  function flashFeedback(name) {
+    setIcon(els.stageFeedback, name);
+    els.stageFeedback.classList.remove("flash");
+    void els.stageFeedback.offsetWidth;
+    els.stageFeedback.classList.add("flash");
+  }
+  function togglePlay() {
+    const video = playerVideo(); if (!video) return;
+    if (video.paused || video.ended) { video.play().catch(() => {}); flashFeedback("play"); }
+    else { video.pause(); flashFeedback("pause"); }
+  }
+  function seekBy(seconds) {
+    const video = playerVideo(); if (!video || !Number.isFinite(video.duration)) return;
+    video.currentTime = Math.min(Math.max(video.currentTime + seconds, 0), video.duration);
+    flashFeedback(seconds > 0 ? "chevron-end" : "chevron-start");
+  }
+  function seekToRatio(ratio) {
+    const video = playerVideo(); if (!video || !Number.isFinite(video.duration)) return;
+    video.currentTime = video.duration * ratio;
+  }
+  function changeVolume(delta) {
+    const video = playerVideo(); if (!video) return;
+    video.muted = false;
+    video.volume = Math.min(Math.max(video.volume + delta, 0), 1);
+    flashFeedback("volume");
+  }
+  function toggleMute() {
+    const video = playerVideo(); if (!video) return;
+    video.muted = !video.muted;
+    flashFeedback(video.muted ? "mute" : "volume");
   }
   function updatePlayerButtons() {
     const list = filteredVideos();
@@ -374,7 +438,9 @@
   document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.close).close()));
   els.closePlayer.addEventListener("click", closePlayer);
   els.fullscreen.addEventListener("click", toggleFullscreen);
-  els.frame.addEventListener("dblclick", toggleFullscreen);
+  els.stageFullscreen.addEventListener("click", toggleFullscreen);
+  els.stage.addEventListener("mousemove", nudgeStageControls);
+  els.stage.addEventListener("touchstart", nudgeStageControls, { passive: true });
   document.addEventListener("fullscreenchange", syncFullscreenButton);
   els.previous.addEventListener("click", () => stepPlayer(-1));
   els.next.addEventListener("click", () => stepPlayer(1));
@@ -387,9 +453,27 @@
       closePlayer();
       return;
     }
-    if (event.target instanceof HTMLInputElement) return;
-    if (event.key === "ArrowRight" && !els.previous.disabled) { stepPlayer(-1); return; }
-    if (event.key === "ArrowLeft" && !els.next.disabled) stepPlayer(1);
+    const target = event.target;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+    const key = event.key.toLowerCase();
+    const handled = () => { event.preventDefault(); nudgeStageControls(); };
+
+    if (key === " " || key === "spacebar" || key === "k") { handled(); togglePlay(); return; }
+    if (key === "f") { handled(); toggleFullscreen(); return; }
+    if (key === "m") { handled(); toggleMute(); return; }
+    if (key === "arrowright") { handled(); seekBy(5); return; }
+    if (key === "arrowleft") { handled(); seekBy(-5); return; }
+    if (key === "l") { handled(); seekBy(10); return; }
+    if (key === "j") { handled(); seekBy(-10); return; }
+    if (key === "arrowup") { handled(); changeVolume(0.1); return; }
+    if (key === "arrowdown") { handled(); changeVolume(-0.1); return; }
+    if (key === "home") { handled(); seekToRatio(0); return; }
+    if (key === "end") { handled(); seekToRatio(0.999); return; }
+    if (/^[0-9]$/.test(key)) { handled(); seekToRatio(Number(key) / 10); return; }
+    if (key === "n" && !els.next.disabled) { handled(); stepPlayer(1); return; }
+    if (key === "p" && !els.previous.disabled) { handled(); stepPlayer(-1); }
   });
 
   syncFullscreenButton();

@@ -28,6 +28,9 @@
   </div>
   <svg class="icon-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.6c0-.9 1-1.5 1.8-1L18 9.7c.8.5.8 1.6 0 2.1L9.8 17c-.8.5-1.8-.1-1.8-1V5.6Z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5h2.2v14H8.5zM13.3 5h2.2v14h-2.2z" fill="currentColor"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4.5 9.5h3l4-3.5v12l-4-3.5h-3z" fill="currentColor"/><path d="M15 9a4 4 0 0 1 0 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4.5 9.5h3l4-3.5v12l-4-3.5h-3z" fill="currentColor"/><path d="M15 9.5l4 5M19 9.5l-4 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
     <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.6l2.5 5 5.5.8-4 3.9.95 5.5L12 16.2l-4.95 2.6.95-5.5-4-3.9 5.5-.8 2.5-5Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
     <symbol id="i-star-fill" viewBox="0 0 24 24"><path d="M12 3.6l2.5 5 5.5.8-4 3.9.95 5.5L12 16.2l-4.95 2.6.95-5.5-4-3.9 5.5-.8 2.5-5Z" fill="currentColor" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
@@ -99,6 +102,8 @@
       <div class="player-stage-column">
         <div id="playerStage" class="player-stage">
           <div id="playerFrameWrap" class="player-frame-wrap"></div>
+          <div id="stageFeedback" class="stage-feedback" aria-hidden="true"><svg class="icon"><use href="#i-play"></use></svg></div>
+          <button id="stageFullscreen" class="stage-fs" type="button" aria-label="מסך מלא" title="מסך מלא (F)"><svg class="icon" aria-hidden="true"><use href="#i-expand"></use></svg></button>
         </div>
 
         <div id="upNextCard" class="up-next-card" hidden>
@@ -123,7 +128,7 @@
             <span class="switch-track" aria-hidden="true"></span>
             <span class="switch-label">הפעלה אוטומטית</span>
           </label>
-          <button id="fullscreenButton" class="nav-action" type="button" aria-label="מסך מלא" title="מסך מלא"><svg class="icon" aria-hidden="true"><use href="#i-expand"></use></svg>מסך מלא</button>
+          <button id="fullscreenButton" class="nav-action" type="button" aria-label="מסך מלא" title="מסך מלא"><svg class="icon" aria-hidden="true"><use href="#i-expand"></use></svg><span>מסך מלא</span></button>
         </nav>
       </div>
 
