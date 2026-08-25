@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff7ec">
+  <title>TubeKids — הסרטונים שלי</title>
+  <meta name="description" content="ספריית סרטונים מקומית, משפחתית ופשוטה לילדים">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Suez+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><b>★</b><b>★</b></div>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><span>▶</span></span>
+        <span><strong>הסרטונים שלי</strong><small>מה בא לך לראות היום?</small></span>
+      </div>
+      <div class="header-actions">
+        <span id="parentBadge" class="parent-badge" hidden>מצב הורים</span>
+        <button id="refreshButton" class="button button-primary parent-only" hidden type="button">↻ רענון מהתיקייה</button>
+        <button id="lockButton" class="icon-button" type="button" aria-label="כניסה למצב הורים" title="מצב הורים">🔒</button>
+      </div>
+    </header>
+
+    <section id="toolbar" class="toolbar" hidden>
+      <label class="search-box">
+        <span aria-hidden="true">⌕</span>
+        <input id="searchInput" type="search" placeholder="חיפוש סרטון..." autocomplete="off" aria-label="חיפוש סרטון">
+      </label>
+      <div id="categoryChips" class="chips" aria-label="סינון לפי קטגוריה"></div>
+    </section>
+
+    <section id="storageNotice" class="storage-notice parent-only" hidden>
+      <span id="storageDot" class="status-dot"></span>
+      <span id="storageText">קורא את תיקיית הסרטונים…</span>
+    </section>
+
+    <section id="videoGrid" class="video-grid" aria-live="polite"></section>
+
+    <section id="emptyState" class="empty-state" hidden>
+      <div class="empty-illustration" aria-hidden="true">▶</div>
+      <h1 id="emptyTitle">עוד מעט יהיו כאן סרטונים</h1>
+      <p id="emptyText">בקשו מהורה להוסיף סרטון אהוב.</p>
+    </section>
+  </main>
+
+  <section id="playerOverlay" class="player-overlay" hidden aria-label="נגן וידאו">
+    <header class="player-header">
+      <div class="player-title"><strong id="playingTitle"></strong><small id="playingCategory"></small></div>
+      <label class="switch" title="בסוף כל סרטון הבא יופעל לבד">
+        <input id="autoplayToggle" type="checkbox">
+        <span>הפעלה אוטומטית</span>
+      </label>
+    </header>
+
+    <div class="player-main">
+      <div class="player-stage-column">
+        <div id="playerStage" class="player-stage">
+          <div id="playerFrameWrap" class="player-frame-wrap"></div>
+          <div class="stage-controls">
+            <button id="closePlayer" class="button button-coral" type="button">✕ סגירה</button>
+            <button id="fullscreenButton" class="icon-button dark" type="button" aria-label="מסך מלא" title="מסך מלא">⛶</button>
+          </div>
+          <div id="upNextCard" class="up-next-card" hidden>
+            <p id="upNextKicker" class="up-next-kicker">הסרטון הבא</p>
+            <strong id="upNextTitle"></strong>
+            <div class="up-next-actions">
+              <button id="upNextPlay" class="button button-primary" type="button">▶ נגן עכשיו</button>
+              <button id="upNextCancel" class="button button-ghost" type="button">לא עכשיו</button>
+            </div>
+          </div>
+        </div>
+        <nav class="player-nav" aria-label="מעבר בין סרטונים">
+          <button id="nextButton" class="round-nav" type="button" aria-label="הסרטון הבא">‹</button>
+          <button id="favoritePlaying" class="round-nav favorite-playing" type="button" aria-label="הוספה למועדפים">☆</button>
+          <button id="previousButton" class="round-nav" type="button" aria-label="הסרטון הקודם">›</button>
+        </nav>
+      </div>
+
+      <aside id="playerSidebar" class="player-sidebar" aria-label="סרטונים נוספים">
+        <h2>הנצפים ביותר</h2>
+        <div id="sidebarList" class="sidebar-list"></div>
+      </aside>
+    </div>
+  </section>
+
+  <dialog id="parentDialog" class="modal">
+    <form id="parentForm" method="dialog">
+      <button class="modal-close" type="button" data-close="parentDialog" aria-label="סגירה">✕</button>
+      <div class="modal-icon">🔒</div>
+      <h2>כניסה למצב הורים</h2>
+      <p>הקלידו את הקוד כדי לנהל את הספרייה.</p>
+      <label>קוד הורים<input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="off" required></label>
+      <p id="pinError" class="form-error" hidden>הקוד אינו נכון</p>
+      <button class="button button-primary full" value="default">כניסה</button>
+    </form>
+  </dialog>
+
+  <dialog id="editDialog" class="modal wide">
+    <form id="editForm">
+      <button class="modal-close" type="button" data-close="editDialog" aria-label="סגירה">✕</button>
+      <div class="modal-icon purple">✎</div>
+      <h2>עריכת הסרטון</h2>
+      <p id="editVideoTitle"></p>
+      <datalist id="categoryOptions"></datalist>
+      <label>קטגוריה<input id="editCategoryInput" type="text" list="categoryOptions"></label>
+      <label>תגיות <small>(מופרדות בפסיקים)</small><input id="editTagsInput" type="text" placeholder="חיות, שירים, עברית"></label>
+      <button class="button button-primary full" type="submit">שמירת שינויים</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>
