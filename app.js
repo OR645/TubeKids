@@ -4,9 +4,11 @@
   const AUTOPLAY_KEY = "tubekids.autoplay.v1";
   const PIN = "1234";
   const AUTOPLAY_DELAY = 5;
+  const DEFAULT_CATEGORY_IMAGE = "assets/category-default.jpg";
+  const CATEGORY_IMAGE_FALLBACK = "assets/tubekids-logo.png";
   const THUMB_TIME = 20;      // השנייה שממנה נלקחת התמונה הממוזערת
   const PREVIEW_LENGTH = 6;   // אורך התצוגה המקדימה בריחוף, בשניות
-  const state = { videos: [], metadata: {}, category: "all", search: "", parentMode: false, currentId: null, editId: null, autoplay: true, countdown: 0 };
+  const state = { videos: [], categories: [], metadata: {}, category: "all", search: "", parentMode: false, currentId: null, editId: null, autoplay: true, countdown: 0 };
   const durations = new Map();
   let tapTimer = 0;
   const $ = (selector) => document.querySelector(selector);
@@ -54,7 +56,9 @@
   function saveMetadata() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.metadata)); }
   function applyMetadata(file) {
     const saved = state.metadata[file.id] || {};
-    return { ...file, title: saved.title || file.title, category: saved.category || file.category || "סרטונים",
+    const relativePath = String(file.id || "").replace(/^file:/, "");
+    const inferredFolder = relativePath.includes("/") ? relativePath.split("/")[0] : null;
+    return { ...file, folder: file.folder || inferredFolder, title: saved.title || file.title, category: saved.category || file.category || "סרטונים",
       tags: Array.isArray(saved.tags) ? saved.tags : [], favorite: Boolean(saved.favorite), views: Number(saved.views) || 0 };
   }
   function persistVideo(video) {
@@ -70,6 +74,12 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       state.videos = (data.videos || []).map(applyMetadata);
+      const receivedCategories = Array.isArray(data.categories) ? data.categories :
+        [...new Set(state.videos.map((video) => video.folder).filter(Boolean))].map((name) => ({ name }));
+      state.categories = receivedCategories.map((category) => ({
+        name: category.name,
+        image: category.image || DEFAULT_CATEGORY_IMAGE
+      }));
       els.storageText.textContent = `תיקיית מקור: ${data.folder} — נמצאו ${state.videos.length} סרטונים`;
       els.storageDot.classList.add("connected");
       render();
@@ -88,7 +98,7 @@
     const query = state.search.trim().toLocaleLowerCase("he");
     return state.videos.filter((video) => {
       if (state.category === "favorites" && !video.favorite) return false;
-      if (!["all", "favorites"].includes(state.category) && video.category !== state.category) return false;
+      if (!["all", "favorites", "categories"].includes(state.category) && video.folder !== state.category) return false;
       return !query || `${video.title} ${video.category} ${video.tags.join(" ")}`.toLocaleLowerCase("he").includes(query);
     });
   }
@@ -113,6 +123,18 @@
         </div>
       </article>`;
   }
+  function categoryMarkup(category, index) {
+    const count = state.videos.filter((video) => video.folder === category.name).length;
+    const label = count === 1 ? "סרטון אחד" : `${count} סרטונים`;
+    return `
+      <button class="category-card" data-open-category="${escapeHtml(category.name)}" type="button"
+        aria-label="פתיחת הקטגוריה ${escapeHtml(category.name)}" style="animation-delay:${Math.min(index * 45, 315)}ms">
+        <img src="${escapeHtml(category.image)}" alt="" loading="lazy"
+          onerror="if(this.dataset.fallback)return;this.dataset.fallback='1';this.src='${CATEGORY_IMAGE_FALLBACK}'">
+        <span class="category-card-shade" aria-hidden="true"></span>
+        <span class="category-card-copy"><strong>${escapeHtml(category.name)}</strong><small>${escapeHtml(label)}</small></span>
+      </button>`;
+  }
   function render() {
     document.querySelectorAll(".parent-only").forEach((element) => { element.hidden = !state.parentMode; });
     document.body.classList.toggle("parent-mode", state.parentMode);
@@ -123,22 +145,34 @@
     els.lock.title = lockLabel;
     els.notice.hidden = !state.parentMode;
 
-    const categories = [...new Set(state.videos.map((video) => video.category))].sort((a, b) => a.localeCompare(b, "he"));
-    const chips = [{ key: "all", label: "הכל" }, { key: "favorites", label: "מועדפים", icon: "star-fill", className: "chip-favorites" },
-      ...categories.map((category) => ({ key: category, label: category }))];
-    els.chips.innerHTML = chips.map((chip) => `<button class="chip${chip.className ? ` ${chip.className}` : ""}${state.category === chip.key ? " active" : ""}" data-category="${escapeHtml(chip.key)}" type="button" aria-pressed="${state.category === chip.key}">${chip.icon ? icon(chip.icon) : ""}${escapeHtml(chip.label)}</button>`).join("");
-    els.categoryOptions.innerHTML = categories.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
-    els.toolbar.hidden = state.videos.length === 0;
+    const categoryNames = state.categories.map((category) => category.name);
+    const chips = [
+      { key: "all", label: "הכל" },
+      { key: "favorites", label: "מועדפים", icon: "star-fill", className: "chip-favorites" },
+      { key: "categories", label: "קטגוריות", icon: "folder" }
+    ];
+    els.chips.innerHTML = chips.map((chip) => {
+      const active = chip.key === "categories" ? !["all", "favorites"].includes(state.category) : state.category === chip.key;
+      return `<button class="chip${chip.className ? ` ${chip.className}` : ""}${active ? " active" : ""}" data-category="${chip.key}" type="button" aria-pressed="${active}">${chip.icon ? icon(chip.icon) : ""}${chip.label}</button>`;
+    }).join("");
+    els.categoryOptions.innerHTML = categoryNames.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("");
+    els.toolbar.hidden = state.videos.length === 0 && state.categories.length === 0;
     els.searchBox.hidden = state.videos.length === 0;
 
     const visible = filteredVideos();
-    els.grid.innerHTML = visible.map(cardMarkup).join("");
-    setupPreviews(els.grid);
-    const noMatches = state.videos.length > 0 && visible.length === 0;
-    els.empty.hidden = state.videos.length > 0 && !noMatches;
+    const showingCategories = state.category === "categories";
+    els.grid.classList.toggle("category-grid", showingCategories);
+    els.grid.innerHTML = showingCategories ? state.categories.map(categoryMarkup).join("") : visible.map(cardMarkup).join("");
+    if (!showingCategories) setupPreviews(els.grid);
+    const noMatches = !showingCategories && state.videos.length > 0 && visible.length === 0;
+    const noCategories = showingCategories && state.categories.length === 0;
+    els.empty.hidden = showingCategories ? !noCategories : (state.videos.length > 0 && !noMatches);
     if (noMatches) {
       els.emptyTitle.textContent = "לא מצאנו סרטון מתאים";
       els.emptyText.textContent = "אפשר לנסות חיפוש אחר או לבחור קטגוריה אחרת.";
+    } else if (noCategories) {
+      els.emptyTitle.textContent = "עדיין אין קטגוריות";
+      els.emptyText.textContent = "כל תיקייה שתיצרו בתוך תיקיית המקור תופיע כאן כקטגוריה.";
     } else if (!state.videos.length) {
       els.emptyTitle.textContent = "תיקיית הסרטונים עדיין ריקה";
       els.emptyText.textContent = "העתיקו קובצי וידאו לתיקיית המקור והפעילו רענון במצב הורים.";
@@ -410,12 +444,19 @@
   });
   els.refresh.addEventListener("click", () => loadVideos(true));
   els.editForm.addEventListener("submit", saveEdit);
-  els.search.addEventListener("input", () => { state.search = els.search.value; render(); });
+  els.search.addEventListener("input", () => {
+    state.search = els.search.value;
+    if (state.search) state.category = "all";
+    if (!els.player.hidden) closePlayer();
+    render();
+  });
   els.chips.addEventListener("click", (event) => {
     const button = event.target.closest("[data-category]");
     if (button) { state.category = button.dataset.category; render(); }
   });
   els.grid.addEventListener("click", (event) => {
+    const category = event.target.closest("[data-open-category]")?.dataset.openCategory;
+    if (category) { state.category = category; render(); return; }
     const action = event.target.closest("[data-action]")?.dataset.action;
     const id = event.target.closest("[data-id]")?.dataset.id;
     if (action === "play") openPlayer(id);
@@ -477,6 +518,9 @@
   });
 
   syncFullscreenButton();
+  const syncTopbarHeight = () => document.documentElement.style.setProperty("--topbar-height", `${document.querySelector(".topbar").offsetHeight}px`);
+  new ResizeObserver(syncTopbarHeight).observe(document.querySelector(".topbar"));
+  syncTopbarHeight();
   loadMetadata();
   loadVideos().finally(() => window.TubeKidsSplash?.ready());
   setInterval(() => fetch("/__ping", { cache: "no-store" }).catch(() => {}), 30000);

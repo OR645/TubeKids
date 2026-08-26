@@ -121,6 +121,16 @@ try {
             }
 
             if ($requestPath -eq '/__videos') {
+                $categoryDirectories = @(Get-ChildItem -LiteralPath $videoFolder -Directory -ErrorAction SilentlyContinue | Sort-Object Name)
+                $categories = @($categoryDirectories | ForEach-Object {
+                    $categoryImage = Join-Path $_.FullName 'category.jpg'
+                    [PSCustomObject]@{
+                        name = $_.Name
+                        image = if (Test-Path -LiteralPath $categoryImage -PathType Leaf) {
+                            '/__category/' + [Uri]::EscapeDataString($_.Name)
+                        } else { $null }
+                    }
+                })
                 $videos = @(Get-ChildItem -LiteralPath $videoFolder -File -Recurse -ErrorAction SilentlyContinue |
                     Where-Object { $videoExtensions -contains $_.Extension.ToLowerInvariant() } |
                     Sort-Object FullName |
@@ -133,11 +143,31 @@ try {
                             src = '/__video/' + ($segments -join '/')
                             title = [IO.Path]::GetFileNameWithoutExtension($_.Name)
                             category = if ($parent) { $parent.Split([char[]]@('/', '\'))[0] } else { 'סרטונים' }
+                            folder = if ($parent) { $parent.Split([char[]]@('/', '\'))[0] } else { $null }
                         }
                     })
-                $json = [PSCustomObject]@{ folder = $videoFolder; videos = $videos } | ConvertTo-Json -Depth 4 -Compress
+                $json = [PSCustomObject]@{ folder = $videoFolder; categories = $categories; videos = $videos } | ConvertTo-Json -Depth 4 -Compress
                 $body = [Text.Encoding]::UTF8.GetBytes($json)
                 $header = "HTTP/1.1 200 OK`r`nContent-Type: application/json; charset=utf-8`r`nContent-Length: $($body.Length)`r`nCache-Control: no-store`r`nConnection: close`r`n`r`n"
+                $headerBytes = [Text.Encoding]::ASCII.GetBytes($header)
+                $stream.Write($headerBytes, 0, $headerBytes.Length)
+                $stream.Write($body, 0, $body.Length)
+                continue
+            }
+
+            if ($requestPath.StartsWith('/__category/', [StringComparison]::Ordinal)) {
+                $categoryName = [Uri]::UnescapeDataString($requestPath.Substring(12))
+                $categoryDirectory = [IO.Path]::GetFullPath((Join-Path $videoFolder $categoryName))
+                $categoryImage = Join-Path $categoryDirectory 'category.jpg'
+                if (-not $categoryDirectory.StartsWith($videoRootWithSeparator, [StringComparison]::OrdinalIgnoreCase) -or
+                    $categoryName.IndexOfAny([char[]]@('/', '\')) -ge 0 -or
+                    -not (Test-Path -LiteralPath $categoryImage -PathType Leaf)) {
+                    $body = [Text.Encoding]::UTF8.GetBytes('Not found')
+                    $header = "HTTP/1.1 404 Not Found`r`nContent-Type: text/plain; charset=utf-8`r`nContent-Length: $($body.Length)`r`nConnection: close`r`n`r`n"
+                } else {
+                    $body = [IO.File]::ReadAllBytes($categoryImage)
+                    $header = "HTTP/1.1 200 OK`r`nContent-Type: image/jpeg`r`nContent-Length: $($body.Length)`r`nCache-Control: no-cache`r`nX-Content-Type-Options: nosniff`r`nConnection: close`r`n`r`n"
+                }
                 $headerBytes = [Text.Encoding]::ASCII.GetBytes($header)
                 $stream.Write($headerBytes, 0, $headerBytes.Length)
                 $stream.Write($body, 0, $body.Length)
