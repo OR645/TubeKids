@@ -277,9 +277,11 @@ html[dir="ltr"] .video-card:hover .play-badge { transform: translate(-50%, -50%)
 .player-overlay {
   position: fixed; z-index: 80; inset-inline: 0; inset-block: var(--topbar-height, 100px) 0; display: flex; flex-direction: column;
   gap: 20px; padding: clamp(16px, 1.8vw, 30px);
-  background: linear-gradient(180deg, rgba(6, 28, 74, .9), rgba(6, 28, 74, .82));
+  overflow: hidden; background: linear-gradient(180deg, var(--navy-900), #082259);
   color: #fff; animation: player-in .2s var(--ease) both;
 }
+.player-overlay > .player-ambient { position: absolute; z-index: 0; opacity: .38; }
+.player-header, .player-main { position: relative; z-index: 2; }
 .player-header { display: flex; align-items: center; gap: 20px; }
 .player-title { flex: 1; min-width: 0; }
 .player-title strong, .player-title small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
