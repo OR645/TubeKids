@@ -6,22 +6,27 @@ $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 function Resolve-VideoFolder {
     param([string]$Override)
 
-    # 1. פרמטר מפורש, 2. משתנה סביבה, 3. תיקיית הווידאו של המשתמש, 4. ברירת מחדל
+    # 1. פרמטר מפורש, 2. משתנה סביבה — שניהם נתיב מלא כמות שהוא
     if ($Override) { return [IO.Path]::GetFullPath($Override) }
     if ($env:TUBEKIDS_VIDEO_FOLDER) { return [IO.Path]::GetFullPath($env:TUBEKIDS_VIDEO_FOLDER) }
 
+    # ברירת המחדל: תת־תיקיית TubeKids בתוך תיקיית הווידאו של המשתמש
+    return [IO.Path]::GetFullPath((Join-Path (Resolve-UserVideosFolder) 'TubeKids'))
+}
+
+function Resolve-UserVideosFolder {
     # קריאה מהרישום תופסת גם הפניה של תיקיית הווידאו ל־OneDrive או לכונן אחר
     try {
         $shellFolders = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders'
         $raw = (Get-ItemProperty -LiteralPath $shellFolders -Name 'My Video' -ErrorAction Stop).'My Video'
         $expanded = [Environment]::ExpandEnvironmentVariables($raw)
-        if ($expanded -and $expanded.Trim()) { return [IO.Path]::GetFullPath($expanded) }
+        if ($expanded -and $expanded.Trim()) { return $expanded }
     } catch { }
 
     $known = [Environment]::GetFolderPath('MyVideos')
-    if ($known -and $known.Trim()) { return [IO.Path]::GetFullPath($known) }
+    if ($known -and $known.Trim()) { return $known }
 
-    return [IO.Path]::GetFullPath((Join-Path $env:USERPROFILE 'Videos'))
+    return (Join-Path $env:USERPROFILE 'Videos')
 }
 
 $videoFolder = Resolve-VideoFolder -Override $VideoFolder
