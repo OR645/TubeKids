@@ -157,7 +157,7 @@ body.parent-mode #lockButton:hover { background: var(--yellow-400); }
 /* ---------- כרטיסי סרטון ---------- */
 .video-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: clamp(16px, 1.4vw, 24px);
+  gap: clamp(16px, 1.4vw, 24px); margin-block-start: clamp(24px, 3.5vw, 52px);
 }
 .video-card {
   position: relative; display: flex; flex-direction: column; overflow: hidden;
