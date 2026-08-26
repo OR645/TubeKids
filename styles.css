@@ -86,8 +86,8 @@ a:hover { color: var(--blue-200); }
 .tk-logo { position: relative; display: block; line-height: 0; background: transparent; }
 .tk-logo .tk-logo-video { display: block; width: 100%; height: 100%; object-fit: contain; background: transparent; }
 .brand-logo {
-  width: clamp(120px, 11vw, 168px); height: clamp(120px, 11vw, 168px); flex: none;
-  margin-block-end: clamp(-64px, -5vw, -44px);
+  width: clamp(180px, 15vw, 240px); height: clamp(180px, 15vw, 240px); flex: none;
+  margin: 0;
   filter: drop-shadow(0 14px 26px rgba(0, 0, 0, .35));
 }
 .header-actions { display: flex; align-items: center; gap: 12px; flex: none; }
@@ -402,7 +402,7 @@ html[dir="ltr"] .switch input:checked + .switch-track::after { translate: 24px 0
   .field-row { grid-template-columns: 1fr; gap: 0; }
 }
 @media (max-width: 760px) {
-  .brand-logo { width: 96px; height: 96px; margin-block-end: -34px; }
+  .brand-logo { width: 132px; height: 132px; margin: 0; }
   .lock-label { display: none !important; }
   .search-box { height: 44px; padding: 0 14px; }
   .video-grid { grid-template-columns: 1fr; }

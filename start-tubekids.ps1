@@ -45,7 +45,23 @@ foreach ($folder in @($videoFolder, $thumbFolder)) {
 
 # ---------- עזר מנוהל: תמונה ממוזערת מווינדוס + אורך סרטון מכותרת הקובץ ----------
 if (-not ('TubeKids.Media' -as [type])) {
-    Add-Type -ReferencedAssemblies 'System.Drawing' -TypeDefinition @'
+    # ב־PowerShell 7 רשימת ההפניות מחליפה את ברירת המחדל, וכל אסמבלי דורש הפניה
+    # מפורשת: Thread נפרד מ־System.Runtime, ו־Bitmap יושב ב־System.Drawing.Common
+    # שנשען בעצמו על אסמבלי פנימיים. השמות הפנימיים משתנים בין גרסאות .NET, ולכן
+    # נכללים רק אלה שקיימים בהתקנה שרצה עכשיו.
+    $mediaRefs = if ($PSEdition -eq 'Core') {
+        $refDirs = @([IO.Path]::GetDirectoryName([object].Assembly.Location), $PSHOME)
+        @(
+            'System.Drawing', 'System.Drawing.Common', 'System.Threading.Thread',
+            'System.Private.Windows.Core', 'System.Private.Windows.GdiPlus'
+        ) | Where-Object {
+            $name = $_
+            $refDirs | Where-Object { Test-Path -LiteralPath (Join-Path $_ "$name.dll") }
+        }
+    } else {
+        @('System.Drawing')
+    }
+    Add-Type -ReferencedAssemblies $mediaRefs -TypeDefinition @'
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
