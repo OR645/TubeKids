@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/tubekids-logo.png" alt="TubeKids" width="120" />
+<img src="assets/tubekids-logo.png" alt="TubeKids" width="250" />
 
 # TubeKids
 
