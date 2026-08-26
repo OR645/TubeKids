@@ -6,9 +6,10 @@
   const AUTOPLAY_DELAY = 5;
   const DEFAULT_CATEGORY_IMAGE = "assets/category-default.jpg";
   const CATEGORY_IMAGE_FALLBACK = "assets/tubekids-logo.png";
+  const ROOT_CATEGORY = "סרטונים";   // הקטגוריה של קבצים שיושבים ישר בתיקיית המקור
   const THUMB_TIME = 20;      // השנייה שממנה נלקחת התמונה הממוזערת
   const PREVIEW_LENGTH = 6;   // אורך התצוגה המקדימה בריחוף, בשניות
-  const state = { videos: [], categories: [], metadata: {}, category: "all", search: "", parentMode: false, currentId: null, editId: null, autoplay: true, countdown: 0 };
+  const state = { videos: [], categories: [], metadata: {}, category: "categories", search: "", parentMode: false, currentId: null, editId: null, autoplay: true, countdown: 0 };
   const durations = new Map();
   let tapTimer = 0;
   const $ = (selector) => document.querySelector(selector);
@@ -58,7 +59,7 @@
     const saved = state.metadata[file.id] || {};
     const relativePath = String(file.id || "").replace(/^file:/, "");
     const inferredFolder = relativePath.includes("/") ? relativePath.split("/")[0] : null;
-    return { ...file, folder: file.folder || inferredFolder, title: saved.title || file.title, category: saved.category || file.category || "סרטונים",
+    return { ...file, folder: file.folder || inferredFolder || ROOT_CATEGORY, title: saved.title || file.title, category: saved.category || file.category || ROOT_CATEGORY,
       tags: Array.isArray(saved.tags) ? saved.tags : [], favorite: Boolean(saved.favorite), views: Number(saved.views) || 0 };
   }
   function persistVideo(video) {
@@ -84,12 +85,22 @@
         name: category.name,
         image: category.image || DEFAULT_CATEGORY_IMAGE
       }));
+      // סרטונים שלא בתוך תיקייה מקבלים קטגוריה משלהם, אחרת אין דרך להגיע אליהם
+      // ממסך הקטגוריות. היא נכנסת אחרונה, אחרי התיקיות האמיתיות.
+      const hasLooseVideos = state.videos.some((video) => video.folder === ROOT_CATEGORY);
+      if (hasLooseVideos && !state.categories.some((category) => category.name === ROOT_CATEGORY)) {
+        state.categories.push({ name: ROOT_CATEGORY, image: DEFAULT_CATEGORY_IMAGE });
+      }
+      // בלי תיקיות משנה אין מה להציג במסך הקטגוריות, ולכן נפתחת ישר הספרייה כולה
+      if (state.category === "categories" && state.categories.length === 0) state.category = "all";
       els.storageText.textContent = `תיקיית מקור: ${data.folder} — נמצאו ${state.videos.length} סרטונים`;
       els.storageDot.classList.add("connected");
       render();
       if (showMessage) showToast("רשימת הסרטונים עודכנה");
     } catch (error) {
       state.videos = [];
+      state.categories = [];
+      state.category = "all";   // אחרת מסך הקטגוריות הריק מסתיר את הודעת התקלה
       els.storageText.textContent = "לא ניתן לקרוא את תיקיית הסרטונים. הפעילו את TubeKids.cmd";
       els.storageDot.classList.remove("connected");
       render();
@@ -152,9 +163,9 @@
 
     const categoryNames = state.categories.map((category) => category.name);
     const chips = [
+      { key: "categories", label: "קטגוריות", icon: "folder" },
       { key: "all", label: "הכל" },
-      { key: "favorites", label: "מועדפים", icon: "star-fill", className: "chip-favorites" },
-      { key: "categories", label: "קטגוריות", icon: "folder" }
+      { key: "favorites", label: "מועדפים", icon: "star-fill", className: "chip-favorites" }
     ];
     els.chips.innerHTML = chips.map((chip) => {
       const active = chip.key === "categories" ? !["all", "favorites"].includes(state.category) : state.category === chip.key;
