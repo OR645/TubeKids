@@ -193,14 +193,18 @@
       .sort((a, b) => b.views - a.views || a.title.localeCompare(b.title, "he"));
   }
   function renderSidebar() {
+    stopPreview();
     const list = mostViewed(state.currentId).slice(0, 30);
     els.sidebarList.innerHTML = list.map((video) => `
       <button class="sidebar-item" data-play="${escapeHtml(video.id)}" type="button">
-        <img src="${escapeHtml(video.thumb || "")}" alt="" loading="lazy" decoding="async"
-          onerror="if(this.dataset.fallback)return;this.dataset.fallback='1';this.src='${CATEGORY_IMAGE_FALLBACK}'">
-        <span><strong>${escapeHtml(video.title)}</strong><small>${escapeHtml(video.category)}</small></span>
+        <span class="sidebar-thumb">
+          <img src="${escapeHtml(video.thumb || "")}" alt="" loading="lazy" decoding="async"
+            onerror="if(this.dataset.fallback)return;this.dataset.fallback='1';this.src='${CATEGORY_IMAGE_FALLBACK}'">
+        </span>
+        <span class="sidebar-copy"><strong>${escapeHtml(video.title)}</strong><small>${escapeHtml(video.category)}</small></span>
       </button>`).join("");
     els.sidebar.hidden = list.length === 0;
+    setupSidebarPreviews();
   }
 
   /* ---------- תצוגה מקדימה בריחוף ---------- */
@@ -252,6 +256,15 @@
       if (!video) return;
       button.addEventListener("pointerenter", () => startPreview(button, video));
       button.addEventListener("pointerleave", stopPreview);
+    });
+  }
+  function setupSidebarPreviews() {
+    els.sidebarList.querySelectorAll(".sidebar-item").forEach((item) => {
+      const video = state.videos.find((candidate) => candidate.id === item.dataset.play);
+      const target = item.querySelector(".sidebar-thumb");
+      if (!video || !target) return;
+      item.addEventListener("pointerenter", () => startPreview(target, video));
+      item.addEventListener("pointerleave", stopPreview);
     });
   }
 
@@ -317,6 +330,7 @@
     els.player.hidden = false; document.body.style.overflow = "hidden"; updatePlayerButtons(); render();
   }
   async function closePlayer() {
+    stopPreview();
     hideUpNext();
     clearTimeout(tapTimer);
     els.stage.classList.remove("show-controls");
