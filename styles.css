@@ -87,7 +87,7 @@ a:hover { color: var(--blue-200); }
 .tk-logo .tk-logo-video { display: block; width: 100%; height: 100%; object-fit: contain; background: transparent; }
 .brand-logo {
   width: clamp(180px, 15vw, 240px); height: clamp(180px, 15vw, 240px); flex: none;
-  margin: 0;
+  margin-block-end: calc(76px - clamp(180px, 15vw, 240px));
   filter: drop-shadow(0 14px 26px rgba(0, 0, 0, .35));
 }
 .header-actions { display: flex; align-items: center; gap: 12px; flex: none; }
@@ -97,7 +97,10 @@ body.parent-mode #lockButton:hover { background: var(--yellow-400); }
 
 /* ---------- מסך הבית ---------- */
 .app-shell { position: relative; z-index: 2; max-width: 1840px; margin: 0 auto; padding: 0 clamp(18px, 3vw, 56px) 80px; }
-.toolbar { display: grid; gap: 22px; padding: clamp(56px, 5vw, 76px) 0 24px; }
+.toolbar {
+  display: grid; gap: 22px;
+  padding: 22px clamp(180px, 15vw, 240px) 24px 0;
+}
 .search-box {
   display: flex; align-items: center; gap: 12px; flex: 1 1 auto;
   min-width: 0; max-width: 620px; height: 50px;
@@ -402,7 +405,8 @@ html[dir="ltr"] .switch input:checked + .switch-track::after { translate: 24px 0
   .field-row { grid-template-columns: 1fr; gap: 0; }
 }
 @media (max-width: 760px) {
-  .brand-logo { width: 132px; height: 132px; margin: 0; }
+  .brand-logo { width: 132px; height: 132px; margin-block-end: -76px; }
+  .toolbar { padding-inline-end: 132px; }
   .lock-label { display: none !important; }
   .search-box { height: 44px; padding: 0 14px; }
   .video-grid { grid-template-columns: 1fr; }
