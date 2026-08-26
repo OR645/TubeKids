@@ -74,6 +74,10 @@
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       state.videos = (data.videos || []).map(applyMetadata);
+      state.videos.forEach((video) => {
+        const text = formatDuration(video.duration);
+        if (text) durations.set(video.id, text);
+      });
       const receivedCategories = Array.isArray(data.categories) ? data.categories :
         [...new Set(state.videos.map((video) => video.folder).filter(Boolean))].map((name) => ({ name }));
       state.categories = receivedCategories.map((category) => ({
@@ -112,7 +116,8 @@
           aria-pressed="${video.favorite}" aria-label="${video.favorite ? "הסרה מהמועדפים" : "הוספה למועדפים"}"
           title="${video.favorite ? "הסרה מהמועדפים" : "הוספה למועדפים"}">${icon(video.favorite ? "star-fill" : "star")}</button>
         <button class="thumb-button local-thumb" data-action="play" type="button" aria-label="ניגון ${escapeHtml(video.title)}">
-          <video src="${escapeHtml(video.src)}" preload="none" muted playsinline tabindex="-1" data-preview></video>
+          <img class="thumb-image" src="${escapeHtml(video.thumb || "")}" alt="" loading="lazy" decoding="async"
+            onerror="if(this.dataset.fallback)return;this.dataset.fallback='1';this.src='${CATEGORY_IMAGE_FALLBACK}'">
           <span class="play-badge" aria-hidden="true">${icon("play")}</span>
           <span class="duration-badge"${duration ? "" : " hidden"}>${escapeHtml(duration || "")}</span>
         </button>
@@ -163,7 +168,7 @@
     const showingCategories = state.category === "categories";
     els.grid.classList.toggle("category-grid", showingCategories);
     els.grid.innerHTML = showingCategories ? state.categories.map(categoryMarkup).join("") : visible.map(cardMarkup).join("");
-    if (!showingCategories) setupPreviews(els.grid);
+    if (!showingCategories) setupCards(els.grid);
     const noMatches = !showingCategories && state.videos.length > 0 && visible.length === 0;
     const noCategories = showingCategories && state.categories.length === 0;
     els.empty.hidden = showingCategories ? !noCategories : (state.videos.length > 0 && !noMatches);
@@ -191,63 +196,62 @@
     const list = mostViewed(state.currentId).slice(0, 30);
     els.sidebarList.innerHTML = list.map((video) => `
       <button class="sidebar-item" data-play="${escapeHtml(video.id)}" type="button">
-        <video src="${escapeHtml(video.src)}" preload="none" muted playsinline tabindex="-1" data-preview></video>
+        <img src="${escapeHtml(video.thumb || "")}" alt="" loading="lazy" decoding="async"
+          onerror="if(this.dataset.fallback)return;this.dataset.fallback='1';this.src='${CATEGORY_IMAGE_FALLBACK}'">
         <span><strong>${escapeHtml(video.title)}</strong><small>${escapeHtml(video.category)}</small></span>
       </button>`).join("");
     els.sidebar.hidden = list.length === 0;
-    setupPreviews(els.sidebarList);
   }
 
-  /* ---------- תמונה ממוזערת ותצוגה מקדימה ---------- */
+  /* ---------- תצוגה מקדימה בריחוף ---------- */
+  // התמונות הממוזערות מגיעות מהשרת כ־JPEG, ולכן אין יותר עשרות חיבורי וידאו במקביל.
+  // תצוגה מקדימה נוצרת רק בריחוף, אחת בכל רגע, ומתפרקת ביציאה.
+  let activePreview = null;
   function previewStart(element) {
     const duration = element.duration;
     if (!Number.isFinite(duration) || duration <= 0) return 0;
     return duration > THUMB_TIME + 1 ? THUMB_TIME : Math.max(0, duration / 2);
   }
-  function seekToPoster(element) {
-    try { element.currentTime = previewStart(element); } catch { /* עוד אין מטא־דאטה */ }
+  function seekTo(element, seconds) {
+    try { element.currentTime = seconds; } catch { /* עוד אין מטא־דאטה */ }
   }
-  function preparePoster(element) {
-    if (element.readyState >= 1) { seekToPoster(element); return; }
-    element.addEventListener("loadedmetadata", () => seekToPoster(element), { once: true });
-    element.preload = "metadata";
-    element.load();
-  }
-  function stopPreview(element) {
-    element.dataset.previewing = "";
+  function stopPreview() {
+    if (!activePreview) return;
+    const element = activePreview;
+    activePreview = null;
     element.pause();
-    seekToPoster(element);
+    element.removeAttribute("src");
+    element.load();   // סוגר את החיבור לשרת במקום להשאיר אותו תלוי
+    element.remove();
   }
-  function startPreview(element) {
+  function startPreview(button, video) {
+    stopPreview();
+    const element = document.createElement("video");
+    element.className = "thumb-preview";
     element.muted = true;
-    element.dataset.previewing = "1";
-    const begin = () => {
-      if (!element.dataset.previewing) return;
-      seekToPoster(element);
-      element.play().catch(() => { element.dataset.previewing = ""; });
-    };
-    if (element.readyState >= 1) begin();
-    else { element.addEventListener("loadedmetadata", begin, { once: true }); preparePoster(element); }
-  }
-  // השרת המקומי מטפל בבקשה אחת בכל פעם, ולכן טוענים תמונות ממוזערות רק כשהן מתקרבות למסך
-  const posterObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      posterObserver.unobserve(entry.target);
-      preparePoster(entry.target);
+    element.playsInline = true;
+    element.preload = "metadata";
+    element.tabIndex = -1;
+    element.addEventListener("loadedmetadata", () => {
+      if (activePreview !== element) return;
+      seekTo(element, previewStart(element));
+      element.play().catch(() => stopPreview());
+    }, { once: true });
+    element.addEventListener("timeupdate", () => {
+      const begin = previewStart(element);
+      if (element.currentTime > begin + PREVIEW_LENGTH) seekTo(element, begin);
     });
-  }, { rootMargin: "300px" });
-  function setupPreviews(container) {
-    container.querySelectorAll("video[data-preview]").forEach((element) => {
-      posterObserver.observe(element);
-      element.addEventListener("timeupdate", () => {
-        if (!element.dataset.previewing) return;
-        const start = previewStart(element);
-        if (element.currentTime > start + PREVIEW_LENGTH) element.currentTime = start;
-      });
-      const hoverTarget = element.parentElement;
-      hoverTarget.addEventListener("pointerenter", () => startPreview(element));
-      hoverTarget.addEventListener("pointerleave", () => stopPreview(element));
+    element.src = video.src;
+    button.prepend(element);   // מתחת לתגי הפליי והאורך, מעל התמונה הממוזערת
+    activePreview = element;
+  }
+  function setupCards(container) {
+    container.querySelectorAll(".thumb-button").forEach((button) => {
+      const id = button.closest("[data-id]")?.dataset.id;
+      const video = state.videos.find((item) => item.id === id);
+      if (!video) return;
+      button.addEventListener("pointerenter", () => startPreview(button, video));
+      button.addEventListener("pointerleave", stopPreview);
     });
   }
 
@@ -274,7 +278,7 @@
   function hideUpNext() { clearInterval(hideUpNext.timer); els.upNext.hidden = true; }
   function showUpNext(video) {
     els.upNextTitle.textContent = video.title;
-    if (els.upNextThumb) els.upNextThumb.src = `${video.src}#t=${THUMB_TIME}`;
+    if (els.upNextThumb) els.upNextThumb.src = video.thumb || CATEGORY_IMAGE_FALLBACK;
     els.upNext.hidden = false;
     els.upNextCancel.hidden = !state.autoplay;
     els.upNextProgress.parentElement.hidden = !state.autoplay;
@@ -292,6 +296,7 @@
   }
   function openPlayer(id) {
     const video = state.videos.find((item) => item.id === id); if (!video) return;
+    stopPreview();
     hideUpNext();
     video.views += 1; persistVideo(video); state.currentId = id;
     els.playingTitle.textContent = video.title; els.playingCategory.textContent = video.category;
