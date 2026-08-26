@@ -14,7 +14,7 @@
 
 ## התחלה מהירה
 
-1. העתיקו קובצי וידאו אל `C:\Users\or.h\Videos`
+1. העתיקו קובצי וידאו אל תיקיית **הווידאו שלכם** (`%USERPROFILE%\Videos`)
 2. לחצו פעמיים על **`TubeKids.cmd`**
 3. זה הכל 🎬
 
@@ -39,16 +39,16 @@
 
 ## שינוי תיקיית הסרטונים
 
-בתחילת `start-tubekids.ps1`:
+התיקייה מזוהה אוטומטית — תיקיית הווידאו של המשתמש המחובר, כולל הפניה ל־OneDrive או לכונן אחר. אין מה לערוך.
+
+לתיקייה אחרת, בלי לגעת בקוד:
 
 ```powershell
-$videoFolder = 'C:\Users\or.h\Videos'
-```
+# חד־פעמי
+.\start-tubekids.ps1 -VideoFolder 'D:\Kids'
 
-להשתמש בתיקיית `videos` שבפרויקט:
-
-```powershell
-$videoFolder = Join-Path $projectRoot 'videos'
+# קבוע
+setx TUBEKIDS_VIDEO_FOLDER "D:\Kids"
 ```
 
 ## מבנה הפרויקט

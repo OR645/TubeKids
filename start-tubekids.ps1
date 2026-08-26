@@ -1,14 +1,36 @@
-﻿param([switch]$NoBrowser)
+﻿param([switch]$NoBrowser, [string]$VideoFolder)
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$videoFolder = 'C:\Users\or.h\Videos' # אפשר לשנות כאן לתיקייה אחרת, גם בנתיב מלא
+
+function Resolve-VideoFolder {
+    param([string]$Override)
+
+    # 1. פרמטר מפורש, 2. משתנה סביבה, 3. תיקיית הווידאו של המשתמש, 4. ברירת מחדל
+    if ($Override) { return [IO.Path]::GetFullPath($Override) }
+    if ($env:TUBEKIDS_VIDEO_FOLDER) { return [IO.Path]::GetFullPath($env:TUBEKIDS_VIDEO_FOLDER) }
+
+    # קריאה מהרישום תופסת גם הפניה של תיקיית הווידאו ל־OneDrive או לכונן אחר
+    try {
+        $shellFolders = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders'
+        $raw = (Get-ItemProperty -LiteralPath $shellFolders -Name 'My Video' -ErrorAction Stop).'My Video'
+        $expanded = [Environment]::ExpandEnvironmentVariables($raw)
+        if ($expanded -and $expanded.Trim()) { return [IO.Path]::GetFullPath($expanded) }
+    } catch { }
+
+    $known = [Environment]::GetFolderPath('MyVideos')
+    if ($known -and $known.Trim()) { return [IO.Path]::GetFullPath($known) }
+
+    return [IO.Path]::GetFullPath((Join-Path $env:USERPROFILE 'Videos'))
+}
+
+$videoFolder = Resolve-VideoFolder -Override $VideoFolder
 $port = 17853
 $appUrl = "http://127.0.0.1:$port/index.html"
 $videoExtensions = @('.mp4', '.webm', '.ogv', '.mov', '.m4v')
 
 if (-not (Test-Path -LiteralPath $videoFolder -PathType Container)) {
-    New-Item -ItemType Directory -Path $videoFolder | Out-Null
+    New-Item -ItemType Directory -Path $videoFolder -Force | Out-Null
 }
 
 function Open-TubeKidsWindow {
